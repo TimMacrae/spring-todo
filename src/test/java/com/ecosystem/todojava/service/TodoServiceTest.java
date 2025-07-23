@@ -26,6 +26,9 @@ class TodoServiceTest {
     @Mock
     private TodoRepository todoRepository;
 
+    @Mock
+    private ChangeHistoryService changeHistoryService;
+
     @InjectMocks
     private TodoService todoService;
 
