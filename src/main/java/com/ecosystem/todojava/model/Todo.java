@@ -11,8 +11,8 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class Todo {
     private String id;
-    private String name;
-    private String status;
+    private String description;
+    private TodoStatus status;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
