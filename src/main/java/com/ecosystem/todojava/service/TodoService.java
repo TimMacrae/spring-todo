@@ -16,6 +16,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class TodoService {
     private TodoRepository todoRepository;
+    private ChangeHistoryService changeHistoryService;
 
     public List<Todo> getAllTodos() {
         return todoRepository.findAll();
@@ -24,7 +25,12 @@ public class TodoService {
     public Todo createTodo(TodoDto todoDto) {
         try {
             Todo todo = new Todo(UUID.randomUUID().toString(), todoDto.description(), todoDto.status(), LocalDateTime.now(), null);
-            return todoRepository.save(todo);
+            Todo saved = todoRepository.save(todo);
+
+            // Undo: delete the created todo
+            changeHistoryService.recordChange(() -> todoRepository.deleteById(saved.getId()));
+
+            return saved;
         } catch (Exception e) {
             throw new TodoCouldNotBeCreated(todoDto.description());
         }
@@ -35,18 +41,28 @@ public class TodoService {
     }
 
     public Todo updateTodo(String id, TodoDto todoDto) {
-        Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFound(id));
+        Todo oldTodo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFound(id));
+        // Save a copy of the old state for undo
+        Todo oldState = new Todo(oldTodo.getId(), oldTodo.getDescription(), oldTodo.getStatus(), oldTodo.getCreatedAt(), oldTodo.getUpdatedAt());
 
-        todo.setDescription(todoDto.description());
-        todo.setStatus(todoDto.status());
-        todo.setUpdatedAt(LocalDateTime.now());
+        oldTodo.setDescription(todoDto.description());
+        oldTodo.setStatus(todoDto.status());
+        oldTodo.setUpdatedAt(LocalDateTime.now());
 
-        return todoRepository.save(todo);
+        Todo updated = todoRepository.save(oldTodo);
+
+        // Undo: restore the old state
+        changeHistoryService.recordChange(() -> todoRepository.save(oldState));
+
+        return updated;
     }
 
     public String deleteTodo(String id) {
-            todoRepository.findById(id).orElseThrow(() -> new TodoNotFound(id));
-            todoRepository.deleteById(id);
-            return id;
+        Todo todo = todoRepository.findById(id).orElseThrow(() -> new TodoNotFound(id));
+        todoRepository.deleteById(id);
+
+        // Undo: restore the deleted todo
+        changeHistoryService.recordChange(() -> todoRepository.save(todo));
+        return id;
     }
 }
