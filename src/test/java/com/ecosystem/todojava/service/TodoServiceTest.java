@@ -108,4 +108,52 @@ class TodoServiceTest {
         Mockito.verify(todoRepository, Mockito.times(1)).findById("5");
     }
 
+    @Test
+    void updateTodo_shouldReturnUpdatedTodo() {
+        TodoDto update = new TodoDto("update", TodoStatus.IN_PROGRESS);
+        Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.of(todo1));
+        todo1.setDescription(update.description());
+        todo1.setStatus(update.status());
+        Mockito.when(todoRepository.save(todo1)).thenReturn(todo1);
+
+        Todo response = todoService.updateTodo(todo1.getId(),update);
+
+        assertEquals(update.description(), response.getDescription());
+        assertEquals(update.status(), response.getStatus());
+        Mockito.verify(todoRepository, Mockito.times(1)).findById(todo1.getId());
+        Mockito.verify(todoRepository, Mockito.times(1)).save(todo1);
+    }
+
+    @Test
+    void updateTodo_shouldThrowTodoCouldNotBeFound() {
+        Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.empty());
+
+        assertThrows(TodoNotFound.class, () -> {
+            todoService.updateTodo("5", todoDto);
+        });
+        Mockito.verify(todoRepository, Mockito.times(1)).findById("5");
+    }
+
+    @Test
+    void deleteTodo_shouldReturnTheDeletedId() {
+        Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.of(todo1));
+        Mockito.doNothing().when(todoRepository).deleteById(todo1.getId());
+
+        String response = todoService.deleteTodo(todo1.getId());
+
+        assertEquals(todo1.getId(), response);
+        Mockito.verify(todoRepository, Mockito.times(1)).findById(todo1.getId());
+        Mockito.verify(todoRepository, Mockito.times(1)).deleteById(todo1.getId());
+    }
+
+    @Test
+    void deleteTodo_shouldThrowTodoCouldNotBeFound() {
+        Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.empty());
+
+        assertThrows(TodoNotFound.class, () -> {
+            todoService.deleteTodo("5");
+        });
+        Mockito.verify(todoRepository, Mockito.times(1)).findById("5");
+    }
+
 }

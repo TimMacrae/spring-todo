@@ -125,4 +125,72 @@ class TodoControllerTest {
                 ));
     }
 
+    @Test
+    void updateTodo_ShouldReturnTheUpdatedTodo() throws Exception {
+        Todo todo = new Todo("1", "add tests", TodoStatus.OPEN, LocalDateTime.now(), null);
+        todoRepository.save(todo);
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/todo/1").contentType(MediaType.APPLICATION_JSON).content(
+                        """
+                                {"description":"update todo",
+                                "status": "IN_PROGRESS"
+                                }
+                                """
+                ))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().json(
+                        """
+                                {
+                                "description": "update todo",
+                                "status": "IN_PROGRESS"
+                                }
+                                """
+                ))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").isNotEmpty())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.createdAt").isNotEmpty())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.updatedAt").isNotEmpty());
+    }
+
+    @Test
+    void updateTodo_ShouldThrowAnExceptionIfTodoNotFound() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/todo/5").contentType(MediaType.APPLICATION_JSON).content(
+                        """
+                                 {"description":"update todo",
+                                  "status": "IN_PROGRESS"
+                                  }
+                                """
+                ))
+                .andExpect(MockMvcResultMatchers.status().isNotFound()).andExpect(MockMvcResultMatchers.content().json(
+                        """
+                                {"message": "Todo Not Found with id: 5"}
+                                """
+                ));
+    }
+
+    @Test
+    void deleteTodo_ShouldReturnTheDeletedId() throws Exception {
+        Todo todo = new Todo("1", "add tests", TodoStatus.OPEN, LocalDateTime.now(), null);
+        todoRepository.save(todo);
+
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/todo/1"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().json(
+                        """
+                                {
+                                "id": "1"
+                                }
+                                """
+                ));
+    }
+
+    @Test
+    void deleteTodo_ShouldThrowAnExceptionIfTodoNotFound() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.delete("/api/todo/5"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound()).andExpect(MockMvcResultMatchers.content().json(
+                        """
+                                {"message": "Todo Not Found with id: 5"}
+                                """
+                ));
+    }
+
 }
