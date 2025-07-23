@@ -83,9 +83,7 @@ class TodoServiceTest {
 
         TodoDto todoDto = new TodoDto("fail", TodoStatus.OPEN);
 
-        assertThrows(TodoCouldNotBeCreated.class, () -> {
-            todoService.createTodo(todoDto);
-        });
+        assertThrows(TodoCouldNotBeCreated.class, () -> todoService.createTodo(todoDto));
     }
 
     @Test
@@ -102,9 +100,7 @@ class TodoServiceTest {
     void getTodoById_shouldThrowTodoCouldNotBeFound() {
         Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.empty());
 
-        assertThrows(TodoNotFound.class, () -> {
-            todoService.getTodoById("5");
-        });
+        assertThrows(TodoNotFound.class, () -> todoService.getTodoById("5"));
         Mockito.verify(todoRepository, Mockito.times(1)).findById("5");
     }
 
@@ -128,9 +124,7 @@ class TodoServiceTest {
     void updateTodo_shouldThrowTodoCouldNotBeFound() {
         Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.empty());
 
-        assertThrows(TodoNotFound.class, () -> {
-            todoService.updateTodo("5", todoDto);
-        });
+        assertThrows(TodoNotFound.class, () -> todoService.updateTodo("5", todoDto));
         Mockito.verify(todoRepository, Mockito.times(1)).findById("5");
     }
 
@@ -150,9 +144,7 @@ class TodoServiceTest {
     void deleteTodo_shouldThrowTodoCouldNotBeFound() {
         Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.empty());
 
-        assertThrows(TodoNotFound.class, () -> {
-            todoService.deleteTodo("5");
-        });
+        assertThrows(TodoNotFound.class, () -> todoService.deleteTodo("5"));
         Mockito.verify(todoRepository, Mockito.times(1)).findById("5");
     }
 
