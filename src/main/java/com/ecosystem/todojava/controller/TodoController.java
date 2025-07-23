@@ -1,6 +1,7 @@
 package com.ecosystem.todojava.controller;
 
 import com.ecosystem.todojava.exception.TodoCouldNotBeCreated;
+import com.ecosystem.todojava.exception.TodoNotFound;
 import com.ecosystem.todojava.model.Todo;
 import com.ecosystem.todojava.model.TodoDto;
 import com.ecosystem.todojava.service.TodoService;
@@ -28,6 +29,20 @@ public class TodoController {
     public ResponseEntity<Todo> createTodo(@RequestBody TodoDto todoDto) {
         Todo todo = todoService.createTodo(todoDto);
         return ResponseEntity.status(HttpStatus.CREATED).body(todo);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Todo>  getTodoById(@PathVariable String id) {
+        Todo todo = todoService.getTodoById(id);
+        return ResponseEntity.ok(todo);
+    }
+
+
+    @ExceptionHandler(TodoNotFound.class)
+    public ResponseEntity<?> handleTodoNotFound(TodoNotFound ex) {
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
+                java.util.Map.of("message", ex.getMessage())
+        );
     }
 
     @ExceptionHandler(TodoCouldNotBeCreated.class)

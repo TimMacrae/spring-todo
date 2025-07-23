@@ -1,6 +1,7 @@
 package com.ecosystem.todojava.service;
 
 import com.ecosystem.todojava.exception.TodoCouldNotBeCreated;
+import com.ecosystem.todojava.exception.TodoNotFound;
 import com.ecosystem.todojava.model.Todo;
 import com.ecosystem.todojava.model.TodoDto;
 import com.ecosystem.todojava.repository.TodoRepository;
@@ -27,5 +28,9 @@ public class TodoService {
         }catch (Exception e){
             throw new TodoCouldNotBeCreated(todoDto.description());
         }
+    }
+
+    public Todo getTodoById(String id) {
+        return todoRepository.findById(id).orElseThrow(()-> new TodoNotFound(id));
     }
 }
