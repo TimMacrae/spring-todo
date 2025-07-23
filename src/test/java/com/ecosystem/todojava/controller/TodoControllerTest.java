@@ -30,39 +30,40 @@ class TodoControllerTest {
 
 
     @Test
-    void getAllTodos_ShouldReturnAllTodos()  throws Exception {
-        Todo todo = new Todo("1", "add tests", TodoStatus.OPEN, LocalDateTime.now(),null);
+    void getAllTodos_ShouldReturnAllTodos() throws Exception {
+        Todo todo = new Todo("1", "add tests", TodoStatus.OPEN, LocalDateTime.now(), null);
         todoRepository.save(todo);
 
         mockMvc.perform(MockMvcRequestBuilders.get("/api/todo"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().json(
                         """
-                                   [{
-                                   "id": "1",
-                                   "description": "add tests",
-                                   "status": "OPEN",
-                                   "updatedAt": null
-                                   }]
-                                   """
+                                [{
+                                "id": "1",
+                                "description": "add tests",
+                                "status": "OPEN",
+                                "updatedAt": null
+                                }]
+                                """
                 ))
                 .andExpect(MockMvcResultMatchers.jsonPath("$[0].createdAt").isNotEmpty());
     }
+
     @Test
-    void getAllTodos_ShouldReturnEmptyList()  throws Exception {
+    void getAllTodos_ShouldReturnEmptyList() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/todo"))
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(MockMvcResultMatchers.content().json(
                         """
-                                   []
-                                   """
+                                []
+                                """
                 ));
     }
 
     @Test
-    void createTodo_ShouldReturnCreatedTodo()  throws Exception {
+    void createTodo_ShouldReturnCreatedTodo() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/todo").contentType(MediaType.APPLICATION_JSON).content(
-                                """
+                        """
                                 {"description":"create todo",
                                 "status": "OPEN"
                                 }
@@ -71,28 +72,57 @@ class TodoControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isCreated())
                 .andExpect(MockMvcResultMatchers.content().json(
                         """
-                                   {
-                                   "description": "create todo",
-                                   "status": "OPEN",
-                                   "updatedAt": null
-                                   }
-                                   """
+                                {
+                                "description": "create todo",
+                                "status": "OPEN",
+                                "updatedAt": null
+                                }
+                                """
                 ))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").isNotEmpty())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.createdAt").isNotEmpty());
     }
 
     @Test
-    void createTodo_ShouldThrowAnExceptionIfNotCreated()  throws Exception {
+    void createTodo_ShouldThrowAnExceptionIfNotCreated() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/todo").contentType(MediaType.APPLICATION_JSON).content(
                         """
-                        {"description":"create todo",
-                        "status": "WRONG_STATUS"
-                        }
-                        """
+                                {"description":"create todo",
+                                "status": "WRONG_STATUS"
+                                }
+                                """
                 ))
                 .andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value()));
     }
 
+    @Test
+    void getTodoById_ShouldReturnTodoById() throws Exception {
+        Todo todo = new Todo("1", "add tests", TodoStatus.OPEN, LocalDateTime.now(), null);
+        todoRepository.save(todo);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/todo/1"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().json(
+                        """
+                                {
+                                "id": "1",
+                                "description": "add tests",
+                                "status": "OPEN",
+                                "updatedAt": null
+                                }
+                                """
+                ))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.createdAt").isNotEmpty());
+    }
+
+    @Test
+    void getTodoById_ShouldThrowAnExceptionIf_todoNotFound() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/todo/5"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound()).andExpect(MockMvcResultMatchers.content().json(
+                        """
+                                {"message": "Todo Not Found with id: 5"}
+                                """
+                ));
+    }
 
 }

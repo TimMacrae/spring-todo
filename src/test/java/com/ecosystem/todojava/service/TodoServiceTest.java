@@ -1,6 +1,7 @@
 package com.ecosystem.todojava.service;
 
 import com.ecosystem.todojava.exception.TodoCouldNotBeCreated;
+import com.ecosystem.todojava.exception.TodoNotFound;
 import com.ecosystem.todojava.model.Todo;
 import com.ecosystem.todojava.model.TodoDto;
 import com.ecosystem.todojava.model.TodoStatus;
@@ -14,6 +15,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,6 +86,26 @@ class TodoServiceTest {
         assertThrows(TodoCouldNotBeCreated.class, () -> {
             todoService.createTodo(todoDto);
         });
+    }
+
+    @Test
+    void getTodoById_shouldReturnTodo() {
+        Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.of(todo1));
+
+        Todo response = todoService.getTodoById(todo1.getId());
+
+        assertEquals(todo1, response);
+        Mockito.verify(todoRepository, Mockito.times(1)).findById(todo1.getId());
+    }
+
+    @Test
+    void getTodoById_shouldThrowTodoCouldNotBeFound() {
+        Mockito.when(todoRepository.findById(todo1.getId())).thenReturn(Optional.empty());
+
+        assertThrows(TodoNotFound.class, () -> {
+            todoService.getTodoById("5");
+        });
+        Mockito.verify(todoRepository, Mockito.times(1)).findById("5");
     }
 
 }
