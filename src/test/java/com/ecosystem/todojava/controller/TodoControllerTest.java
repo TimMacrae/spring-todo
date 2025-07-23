@@ -3,6 +3,7 @@ package com.ecosystem.todojava.controller;
 import com.ecosystem.todojava.model.Todo;
 import com.ecosystem.todojava.model.TodoStatus;
 import com.ecosystem.todojava.repository.TodoRepository;
+import com.ecosystem.todojava.service.ChangeHistoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -16,6 +17,12 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.time.LocalDateTime;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+
 
 @SpringBootTest()
 @AutoConfigureMockMvc
@@ -27,6 +34,9 @@ class TodoControllerTest {
 
     @Autowired
     private TodoRepository todoRepository;
+
+    @Autowired
+    private ChangeHistoryService changeHistoryService;
 
 
     @Test
@@ -191,6 +201,63 @@ class TodoControllerTest {
                                 {"message": "Todo Not Found with id: 5"}
                                 """
                 ));
+    }
+
+    @Test
+    void undoLastChange_shouldUndoSuccessfully() throws Exception {
+        String todoJson = "{\"description\":\"Test Undo\",\"status\":\"OPEN\"}";
+        mockMvc.perform(post("/api/todo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(todoJson))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/todo/undo"))
+                .andExpect(status().isOk())
+                .andExpect(content().json("{\"message\": \"Last change undone\"}"));
+    }
+
+    @Test
+    void undoLastChange_shouldReturn404IfNoChange() throws Exception {
+        mockMvc.perform(post("/api/todo/undo"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().json("{\"message\": \"No changes to undo\"}"));
+    }
+
+    @Test
+    void undoLastChange_shouldUndoCreate() throws Exception {
+        // Create a todo
+        String todoJson = "{\"description\":\"Test Undo\",\"status\":\"OPEN\"}";
+        mockMvc.perform(post("/api/todo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(todoJson))
+                .andExpect(status().isCreated());
+
+        // Undo the creation
+        mockMvc.perform(post("/api/todo/undo"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Last change undone")));
+
+        // Verify todo is deleted
+        mockMvc.perform(get("/api/todo"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
+
+    @Test
+    void undoLastChange_canUndoMultipleChanges() throws Exception {
+        // Create two todos
+        String todoJson1 = "{\"description\":\"Todo1\",\"status\":\"OPEN\"}";
+        String todoJson2 = "{\"description\":\"Todo2\",\"status\":\"OPEN\"}";
+        mockMvc.perform(post("/api/todo").contentType(MediaType.APPLICATION_JSON).content(todoJson1));
+        mockMvc.perform(post("/api/todo").contentType(MediaType.APPLICATION_JSON).content(todoJson2));
+
+        // Undo twice
+        mockMvc.perform(post("/api/todo/undo")).andExpect(status().isOk());
+        mockMvc.perform(post("/api/todo/undo")).andExpect(status().isOk());
+
+        // Third undo should return 404
+        mockMvc.perform(post("/api/todo/undo")).andExpect(status().isNotFound());
     }
 
 }

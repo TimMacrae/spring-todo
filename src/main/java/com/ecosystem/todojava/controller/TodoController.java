@@ -4,6 +4,7 @@ import com.ecosystem.todojava.exception.TodoCouldNotBeCreated;
 import com.ecosystem.todojava.exception.TodoNotFound;
 import com.ecosystem.todojava.model.Todo;
 import com.ecosystem.todojava.model.TodoDto;
+import com.ecosystem.todojava.service.ChangeHistoryService;
 import com.ecosystem.todojava.service.TodoService;
 import lombok.AllArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,7 @@ import java.util.Map;
 @AllArgsConstructor
 public class TodoController {
     private final TodoService todoService;
+    private final ChangeHistoryService changeHistoryService;
 
 
     @GetMapping
@@ -48,6 +50,16 @@ public class TodoController {
     public ResponseEntity<Map<String, String>> deleteTodo(@PathVariable String id) {
         String deletedId = todoService.deleteTodo(id);
         return  ResponseEntity.ok(Map.of("id", deletedId));
+    }
+
+    @PostMapping("/undo")
+    public ResponseEntity<?> undoLastChange() {
+        boolean undone = changeHistoryService.undoLastChange();
+        if (undone) {
+            return ResponseEntity.ok().body("{\"message\": \"Last change undone\"}");
+        } else {
+            return ResponseEntity.status(404).body("{\"message\": \"No changes to undo\"}");
+        }
     }
 
 
