@@ -94,7 +94,7 @@ class TodoControllerTest {
     }
 
     @Test
-    void createTodo_ShouldThrowAnExceptionIfNotCreated() throws Exception {
+    void createTodo_ShouldThrowAnGlobalExceptionIfNotCreated() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.post("/api/todo").contentType(MediaType.APPLICATION_JSON).content(
                         """
                                 {"description":"create todo",
@@ -102,7 +102,10 @@ class TodoControllerTest {
                                 }
                                 """
                 ))
-                .andExpect(MockMvcResultMatchers.status().is(HttpStatus.BAD_REQUEST.value()));
+                .andExpect(MockMvcResultMatchers.status().is(HttpStatus.INTERNAL_SERVER_ERROR.value()))
+                .andExpect(MockMvcResultMatchers.content().json("""
+                        {"message": "Internal error: HttpMessageNotReadableException"}
+                        """));
     }
 
     @Test
