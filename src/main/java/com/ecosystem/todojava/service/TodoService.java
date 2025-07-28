@@ -1,5 +1,7 @@
 package com.ecosystem.todojava.service;
 
+import com.ecosystem.todojava.dto.ChatGptResponse;
+import com.ecosystem.todojava.exception.ChatGptSpellcheckIsNull;
 import com.ecosystem.todojava.exception.TodoCouldNotBeCreated;
 import com.ecosystem.todojava.exception.TodoNotFound;
 import com.ecosystem.todojava.model.Todo;
@@ -18,13 +20,21 @@ public class TodoService {
     private TodoRepository todoRepository;
     private ChangeHistoryService changeHistoryService;
 
+    private ChatGptService chatGptService;
+
     public List<Todo> getAllTodos() {
         return todoRepository.findAll();
     }
 
     public Todo createTodo(TodoDto todoDto) {
+        String spellCheckedTodo = chatGptService.checkTodoSpelling(todoDto.description()).getFirstOutputText();
+        if(spellCheckedTodo == null) {
+            throw new ChatGptSpellcheckIsNull();
+        }
+        System.out.println("SPELLING" + spellCheckedTodo);
+
         try {
-            Todo todo = new Todo(UUID.randomUUID().toString(), todoDto.description(), todoDto.status(), LocalDateTime.now(), null);
+            Todo todo = new Todo(UUID.randomUUID().toString(), spellCheckedTodo, todoDto.status(), LocalDateTime.now(), null);
             Todo saved = todoRepository.save(todo);
 
             // Undo: delete the created todo
@@ -32,7 +42,7 @@ public class TodoService {
 
             return saved;
         } catch (Exception e) {
-            throw new TodoCouldNotBeCreated(todoDto.description());
+            throw new TodoCouldNotBeCreated(spellCheckedTodo);
         }
     }
 
