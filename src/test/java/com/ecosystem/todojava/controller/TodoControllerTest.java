@@ -6,11 +6,14 @@ import com.ecosystem.todojava.repository.TodoRepository;
 import com.ecosystem.todojava.service.ChangeHistoryService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.client.AutoConfigureMockRestServiceServer;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -19,6 +22,10 @@ import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withServerError;
+import static org.springframework.test.web.client.response.MockRestResponseCreators.withSuccess;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -27,10 +34,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest()
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@AutoConfigureMockRestServiceServer
 class TodoControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private MockRestServiceServer mockServer;
 
     @Autowired
     private TodoRepository todoRepository;
@@ -72,6 +83,24 @@ class TodoControllerTest {
 
     @Test
     void createTodo_ShouldReturnCreatedTodo() throws Exception {
+        // Mock api call
+        mockServer.expect(requestTo("http://localhost"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(
+                        """
+                                {
+                                  "output": [
+                                    {
+                                      "content": [
+                                        {
+                                          "type": "text",
+                                          "text": "create todo"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                        """, MediaType.APPLICATION_JSON));
         mockMvc.perform(MockMvcRequestBuilders.post("/api/todo").contentType(MediaType.APPLICATION_JSON).content(
                         """
                                 {"description":"create todo",
@@ -91,6 +120,59 @@ class TodoControllerTest {
                 ))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.id").isNotEmpty())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.createdAt").isNotEmpty());
+    }
+
+    @Test
+    void createTodo_ShouldReturnNull_andThrowException() throws Exception {
+        // Mock api call
+        mockServer.expect(requestTo("http://localhost"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(
+                        """
+                                {
+                                  "output": [
+                                    {
+                                      "content": [
+                                        {
+                                          "type": "text",
+                                          "text": null
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                        """, MediaType.APPLICATION_JSON));
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/todo").contentType(MediaType.APPLICATION_JSON).content(
+                        """
+                                {"description":"create todo",
+                                "status": "OPEN"
+                                }
+                                """
+                ))
+                .andExpect(MockMvcResultMatchers.status().is(HttpStatus.INTERNAL_SERVER_ERROR.value()))
+                .andExpect(MockMvcResultMatchers.content().json("""
+                        {"message": "Internal error: ChatGptSpellcheckIsNull"}
+                        """));
+    }
+
+    @Test
+    void createTodo_ShouldThrowAnException_ifApiCallFails() throws Exception {
+        // Mock api call
+        mockServer.expect(requestTo("http://localhost"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withServerError());
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/todo").contentType(MediaType.APPLICATION_JSON).content(
+                        """
+                                {"description":"create todo",
+                                "status": "OPEN"
+                                }
+                                """
+                ))
+                .andExpect(MockMvcResultMatchers.status().is(HttpStatus.INTERNAL_SERVER_ERROR.value()))
+                .andExpect(MockMvcResultMatchers.content().json("""
+                        {"message": "Internal error: ChatGptSpellingRequestException"}
+                        """));
     }
 
     @Test
@@ -208,6 +290,25 @@ class TodoControllerTest {
 
     @Test
     void undoLastChange_shouldUndoSuccessfully() throws Exception {
+        // Mock api call
+        mockServer.expect(requestTo("http://localhost"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(
+                        """
+                                {
+                                  "output": [
+                                    {
+                                      "content": [
+                                        {
+                                          "type": "text",
+                                          "text": "Test Undo"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                        """, MediaType.APPLICATION_JSON));
+
         String todoJson = "{\"description\":\"Test Undo\",\"status\":\"OPEN\"}";
         mockMvc.perform(post("/api/todo")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -228,6 +329,24 @@ class TodoControllerTest {
 
     @Test
     void undoLastChange_shouldUndoCreate() throws Exception {
+        // Mock api call
+        mockServer.expect(requestTo("http://localhost"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(
+                        """
+                                {
+                                  "output": [
+                                    {
+                                      "content": [
+                                        {
+                                          "type": "text",
+                                          "text": "Test Undo"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                        """, MediaType.APPLICATION_JSON));
         // Create a todo
         String todoJson = "{\"description\":\"Test Undo\",\"status\":\"OPEN\"}";
         mockMvc.perform(post("/api/todo")
@@ -249,6 +368,42 @@ class TodoControllerTest {
 
     @Test
     void undoLastChange_canUndoMultipleChanges() throws Exception {
+        // Mock api call
+        mockServer.expect(requestTo("http://localhost"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(
+                        """
+                                {
+                                  "output": [
+                                    {
+                                      "content": [
+                                        {
+                                          "type": "text",
+                                          "text": "Todo1"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                        """, MediaType.APPLICATION_JSON));
+        // Mock api call
+        mockServer.expect(requestTo("http://localhost"))
+                .andExpect(method(HttpMethod.POST))
+                .andRespond(withSuccess(
+                        """
+                                {
+                                  "output": [
+                                    {
+                                      "content": [
+                                        {
+                                          "type": "text",
+                                          "text": "Todo2"
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                        """, MediaType.APPLICATION_JSON));
         // Create two todos
         String todoJson1 = "{\"description\":\"Todo1\",\"status\":\"OPEN\"}";
         String todoJson2 = "{\"description\":\"Todo2\",\"status\":\"OPEN\"}";
