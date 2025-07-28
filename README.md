@@ -30,3 +30,13 @@ This project includes unit and integration tests to ensure reliability:
 - TodoNotFoundTest — Ensures correct exception for missing todos.
 - TodoCouldNotBeCreatedTest — Ensures correct exception for creation failures.
 - TodoControllerTest — Integration tests for API endpoints and database interactions.
+
+##  🤖 ChatGPT Spellcheck Integration
+
+This project integrates with the OpenAI ChatGPT API to check the spelling of todo items.
+
+### Usage
+
+- The `ChatGptService` sends todo descriptions to the ChatGPT API for spellchecking.
+- If the API call fails, a `ChatGptSpellingRequestException` is thrown.
+- If the spellcheck response is null, a `ChatGptSpellcheckIsNull` exception is thrown.

@@ -1,5 +1,7 @@
 package com.ecosystem.todojava.service;
 
+import com.ecosystem.todojava.dto.ChatGptResponse;
+import com.ecosystem.todojava.exception.ChatGptSpellcheckIsNull;
 import com.ecosystem.todojava.exception.TodoCouldNotBeCreated;
 import com.ecosystem.todojava.exception.TodoNotFound;
 import com.ecosystem.todojava.model.Todo;
@@ -28,6 +30,9 @@ class TodoServiceTest {
 
     @Mock
     private ChangeHistoryService changeHistoryService;
+
+    @Mock
+    private ChatGptService chatGptService;
 
     @InjectMocks
     private TodoService todoService;
@@ -70,6 +75,12 @@ class TodoServiceTest {
 
     @Test
     void createTodo_shouldCreateTodo() {
+        // Mock RestClient
+        ChatGptResponse mockResponse = Mockito.mock(ChatGptResponse.class);
+        Mockito.when(mockResponse.getFirstOutputText()).thenReturn(todo1.getDescription());
+        Mockito.when(chatGptService.checkTodoSpelling(todo1.getDescription())).thenReturn(mockResponse);
+
+        // Mock the repository
         Mockito.when(todoRepository.save(Mockito.any(Todo.class))).thenReturn(todo1);
 
         Todo todo = todoService.createTodo(todoDto);
@@ -81,12 +92,25 @@ class TodoServiceTest {
 
     @Test
     void createTodo_shouldThrowTodoCouldNotBeCreated_whenRepositoryFails() {
+        ChatGptResponse mockResponse = Mockito.mock(ChatGptResponse.class);
+        Mockito.when(mockResponse.getFirstOutputText()).thenReturn("fail");
+        Mockito.when(chatGptService.checkTodoSpelling(Mockito.anyString())).thenReturn(mockResponse);
+
         Mockito.when(todoRepository.save(Mockito.any(Todo.class)))
                 .thenThrow(new RuntimeException("DB error"));
 
         TodoDto todoDto = new TodoDto("fail", TodoStatus.OPEN);
 
         assertThrows(TodoCouldNotBeCreated.class, () -> todoService.createTodo(todoDto));
+    }
+
+    @Test
+    void createTodo_shouldThrowSpellingIsNullException_whenChatGptCallFails() {
+        ChatGptResponse mockResponse = Mockito.mock(ChatGptResponse.class);
+        Mockito.when(mockResponse.getFirstOutputText()).thenReturn(null);
+        Mockito.when(chatGptService.checkTodoSpelling(Mockito.anyString())).thenReturn(mockResponse);
+
+        assertThrows(ChatGptSpellcheckIsNull.class, () -> todoService.createTodo(todoDto));
     }
 
     @Test
