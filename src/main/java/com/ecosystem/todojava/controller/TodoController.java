@@ -1,5 +1,6 @@
 package com.ecosystem.todojava.controller;
 
+import com.ecosystem.todojava.exception.ExceptionMessage;
 import com.ecosystem.todojava.exception.TodoCouldNotBeCreated;
 import com.ecosystem.todojava.exception.TodoNotFound;
 import com.ecosystem.todojava.model.Todo;
@@ -66,14 +67,14 @@ public class TodoController {
     @ExceptionHandler(TodoNotFound.class)
     public ResponseEntity<?> handleTodoNotFound(TodoNotFound ex) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(
-                java.util.Map.of("message", ex.getMessage())
+                new ExceptionMessage(ex.getMessage())
         );
     }
 
     @ExceptionHandler(TodoCouldNotBeCreated.class)
     public ResponseEntity<?> handleNoCharacterWithIdFound(TodoCouldNotBeCreated ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(
-                java.util.Map.of("message", ex.getMessage())
+                new ExceptionMessage(ex.getMessage())
         );
     }
 
